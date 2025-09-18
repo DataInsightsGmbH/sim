@@ -5,6 +5,7 @@ import { Label, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { FieldDiffStatus } from '@/lib/workflows/diff/types'
 import {
+  AgentBuilderButton,
   ChannelSelectorInput,
   CheckboxList,
   Code,
@@ -296,6 +297,12 @@ export function SubBlock({
             isPreview={isPreview}
             previewValue={previewValue}
             disabled={isDisabled}
+          />
+        )
+      case 'agentBuilderButton':
+        return (
+          <AgentBuilderButton
+            label='Open Agent Builder'
           />
         )
       case 'webhook-config': {

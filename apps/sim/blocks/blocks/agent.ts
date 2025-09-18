@@ -294,6 +294,11 @@ Create a system prompt appropriately detailed for the request, using clear langu
       defaultValue: [],
     },
     {
+      id: 'agentBuilderButton',
+      type: 'agentBuilderButton',
+      layout: 'full',
+    },
+    {
       id: 'responseFormat',
       title: 'Response Format',
       type: 'code',
