@@ -3,34 +3,15 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy } from "lucide-react";
-import { JsonEditor } from "json-edit-react";
 import JsonSkeleton from "./jsonSkeleton";
 import React from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import Editor from 'react-simple-code-editor'
+import { useEffect, useState, useRef } from "react";
+import { highlight, languages } from 'prismjs';
+import { cn } from '@/lib/utils';
+import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/components/sub-block/hooks/use-sub-block-value'
 
-
-const transparentTheme = {
-  styles: {
-    container: {
-      backgroundColor: "transparent",
-    },
-    string: {
-      color: "var(--brand-primary-hex)",
-    },
-    key: {
-      color: "var(--brand-primary-hex)", 
-    },
-    number: {
-      color: "var(--brand-primary-hex)",
-    },
-    boolean: {
-      color: "var(--brand-primary-hex)",
-    },
-    null: {
-      color: "var(--brand-primary-hex)",
-    },
-  },
-};
 
 type DataFieldProps = React.HTMLAttributes<HTMLDivElement> & {
   title: string;
@@ -60,10 +41,11 @@ export function DataField({
   codeEditor = false,
   ...props
 }: DataFieldProps) {
-  const isObject = typeof data === "object" && data !== null;
+  const [schema, setSchema] = useState<object | string>({})
+  const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `${subBlockId}_schema`, false)
 
   const copyToClipboard = async (data: string | object, title: string) => {
-    const text = isObject ? JSON.stringify(data, null, "\t") : (data as string);
+    const text = codeEditor ? JSON.stringify(data, null, "\t") : (data as string);
 
     try {
       await navigator.clipboard.writeText(text);
@@ -77,10 +59,19 @@ export function DataField({
     }
   };
 
+  const [localValue, setLocalValue] = useState(
+    typeof data === "string" ? data : JSON.stringify(data ?? "", null, 2)
+  );
+
+  useEffect(() => {
+    setLocalValue(typeof data === "string" ? data : JSON.stringify(data ?? "", null, 2));
+  }, [data]);
+
+
   return (
     <div
       {...props}
-      className={`relative flex flex-col h-full bg-muted rounded-xl ${props.className ?? ""}`}
+      className={`relative flex flex-col h-full bg-muted rounded-xl overflow-auto ${props.className ?? ""}`}
     >
       <div className="p-2 px-4 w-full flex flex-row items-center justify-between">
         <h2 className="z-10 font-medium">{title}</h2>
@@ -111,22 +102,39 @@ export function DataField({
       <div className="px-4">
         <Separator />
       </div>
-      <div className="flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden font-mono transition-colors bg-background">
-        {isObject ? (
-          <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden font-mono bg-background">
+        {codeEditor ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
             {dataLoading ? (
               <JsonSkeleton />
             ) : (
-              <JsonEditor
-                data={data}
-                setData={(d: unknown) => setData(d as string | object)}
-                theme={transparentTheme}
-              />
+            <Editor
+              value={localValue}
+              onValueChange={(newCode) => {
+                setLocalValue(newCode)
+              }}
+              onBlur={() => {
+                setSchema(localValue);
+                setStoreSchema(localValue);
+                setData(localValue);
+              }}
+              highlight={(code) => highlight(code, languages["javascript"], "javascript")}
+              padding={12}
+              style={{
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                lineHeight: "21px",
+                outline: "none",
+              }}
+              className={cn("code-editor-area caret-primary dark:caret-white")}
+              textareaClassName={cn("focus:outline-none focus:ring-0 border-none bg-transparent resize-none")}
+
+            />
             )}
           </div>
         ) : (
           <Textarea
-            value={data}
+            value={data.toString()}
             onChange={(e) => setData(e.target.value)}
             className="flex-1 resize-none p-4 pt-2 h-full border-none focus-visible:ring-0 font-mono text-sm rounded-xl"
             placeholder={placeholder || "Enter text here..."}
