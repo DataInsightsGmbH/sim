@@ -296,6 +296,8 @@ export function AgentBuilder({
             }}
             className="row-span-1 min-h-0"
             placeholder="Describe the data task you want your agent to perform (e.g. 'Extract the author and date of a news article.')..."
+            blockId={blockId}
+            subBlockId={subBlockId}
           />
           <DataField
             title="Extraction Schema"
@@ -311,6 +313,9 @@ export function AgentBuilder({
             buttonTitle="Generate Schema"
             onButtonClick={handleGenerateSchema}
             className="row-span-2 min-h-0"
+            blockId={blockId}
+            subBlockId={subBlockId}
+            codeEditor={true}
           />
         </div>
 

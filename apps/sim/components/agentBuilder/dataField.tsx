@@ -41,6 +41,9 @@ type DataFieldProps = React.HTMLAttributes<HTMLDivElement> & {
   onButtonClick?: () => void;
   placeholder?: string;
   disabled?: boolean;
+  blockId: string;
+  subBlockId: string;
+  codeEditor?: boolean
 };
 
 export function DataField({
@@ -52,6 +55,9 @@ export function DataField({
   onButtonClick,
   placeholder,
   disabled,
+  blockId,
+  subBlockId,
+  codeEditor = false,
   ...props
 }: DataFieldProps) {
   const isObject = typeof data === "object" && data !== null;
