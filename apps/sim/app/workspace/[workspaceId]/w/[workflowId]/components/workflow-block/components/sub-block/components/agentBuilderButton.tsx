@@ -105,9 +105,13 @@ function FloatingWindow({
 }
 
 export function AgentBuilderButton({
+  blockId,
+  subBlockId,
   label,
   disabled = false,
 }: {
+  blockId: string,
+  subBlockId: string,
   label: string
   disabled?: boolean
 }) {
@@ -128,7 +132,10 @@ export function AgentBuilderButton({
 
       {open && (
         <FloatingWindow title="Agent Builder">
-          < AgentBuilder/>
+          < AgentBuilder
+            blockId={blockId}
+            subBlockId={subBlockId}
+            />
         </FloatingWindow>
       )}
     </>
