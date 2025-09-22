@@ -7,15 +7,17 @@ import { AgentBuilder } from '@/components/agentBuilder/agentBuilder'
 function FloatingWindow({
   title,
   children,
-  initialWidth = 600,
-  initialHeight = 400,
+  initialWidth = 800,
+  initialHeight = 600,
+  classname = '',
 }: {
   title: string
   children: ReactNode
   initialWidth?: number
   initialHeight?: number
+  classname?:string
 }) {
-  const [position, setPosition] = useState({ top: 100, left: 100 })
+  const [position, setPosition] = useState({ top: 300, left: 400 })
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight })
   const panelRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
@@ -78,7 +80,7 @@ function FloatingWindow({
   return (
     <div
       ref={panelRef}
-      className="absolute overflow-hidden rounded-lg border bg-primary shadow-lg border-teal-500"
+      className={`absolute rounded-lg border bg-primary shadow-lg border-teal-500 ${classname}`}
       style={{
         top: position.top,
         left: position.left,
@@ -131,7 +133,7 @@ export function AgentBuilderButton({
       </Button>
 
       {open && (
-        <FloatingWindow title="Agent Builder">
+        <FloatingWindow title="Agent Builder" classname='pb-10'>
           < AgentBuilder
             blockId={blockId}
             subBlockId={subBlockId}
