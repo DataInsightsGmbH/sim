@@ -1,16 +1,17 @@
 "use client";
 import { useState } from "react";
-//import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { toast } from "sonner";
-//import { DataField } from "@/components/agentCreator/agentBuilder/dataField";
 import { DataField } from "./dataField"
-//import { generateSchema } from "@/app/actions";
-import { useProvidersStore } from '@/stores/providers/store'
 import { DataInput } from "./dataInput";
 import { DataOutput } from "./dataOutput";
 import type { JSONSchema7 } from "json-schema";
+import { useWand } from "@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-wand";
+import { useRef } from 'react'
+import { createLogger } from '@/lib/logs/console/logger'
 
 type AgentBuilderProps = React.HTMLAttributes<HTMLDivElement>;
+
+const logger = createLogger('AgentBlock')
 
 export function AgentBuilder({}: AgentBuilderProps) {
   //const { instructions, actions } = useProvidersStore();
@@ -22,60 +23,15 @@ export function AgentBuilder({}: AgentBuilderProps) {
   const [result, setResult] = useState<(object | null)[]>(
     data && typeof data !== "string" ? (data as object[]).map(() => null) : [],
   );
+  const [schemaDescription, setSchemaDescription] = useState<string>('')
 
-  const generate = async () => {
-    setSchemaLoading(true);
-    // if (!instructions) {
-    //   toast.error("Failed to generate schema", {
-    //     description: `No schema instructions found!`,
-    //   });
-    //   setSchemaLoading(false);
-    //   return;
-    // }
-    //const json_schema = await generateSchema(instructions.schema_description);
-    //actions.updateInstructions({ json_schema });
-    setSchemaLoading(false);
-  };
 
   const apply = async () => {
-    // if (!instructions?.json_schema || !inputData) {
-    //   toast.error("Failed to apply schema", {
-    //     description: `${!inputData ? "Input data not found. " : ""}${
-    //       !instructions?.json_schema ? "Schema not found." : ""
-    //     }`,
-    //   });
-    //   return;
-    // }
     setExtractLoading(true);
     const inputRows =
       Array.isArray(inputData) && inputData.length > 0 && typeof inputData[0] === "object"
         ? (inputData as object[]).map((row) => JSON.stringify(row))
         : [inputData];
-
-    // fetchEventSource("/api/apply_all", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({
-    //     json_schema: instructions.json_schema,
-    //     input_rows: inputRows,
-    //   }),
-    //   onmessage(event) {
-    //     const { index, result } = JSON.parse(event.data);
-    //     if (index >= 0) {
-    //       setResult((prev) => {
-    //         const next = [...prev];
-    //         next[index] = result;
-    //         return next;
-    //       });
-    //     }
-    //   },
-    //   onerror(err) {
-    //     console.error("SSE error:", err);
-    //   },
-    //   onclose() {
-    //     setExtractLoading(false);
-    //   },
-    // });
   };
 
 
@@ -115,31 +71,162 @@ export function AgentBuilder({}: AgentBuilderProps) {
     required: ["author", "date", "title"],
   };
 
+  const wandConfig = {
+        enabled: true,
+        maintainHistory: true,
+        prompt: `You are an expert programmer specializing in creating JSON schemas according to a specific format.
+    Generate ONLY the JSON schema based on the user's request.
+    The output MUST be a single, valid JSON object, starting with { and ending with }.
+    The JSON object MUST have the following top-level properties: 'name' (string), 'description' (string), 'strict' (boolean, usually true), and 'schema' (object).
+    The 'schema' object must define the structure and MUST contain 'type': 'object', 'properties': {...}, 'additionalProperties': false, and 'required': [...].
+    Inside 'properties', use standard JSON Schema properties (type, description, enum, items for arrays, etc.).
+
+    Current schema: {context}
+
+    Do not include any explanations, markdown formatting, or other text outside the JSON object.
+
+    Valid Schema Examples:
+
+    Example 1:
+    {
+        "name": "reddit_post",
+        "description": "Fetches the reddit posts in the given subreddit",
+        "strict": true,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "The title of the post"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The content of the post"
+                }
+            },
+            "additionalProperties": false,
+            "required": [ "title", "content" ]
+        }
+    }
+
+    Example 2:
+    {
+        "name": "get_weather",
+        "description": "Fetches the current weather for a specific location.",
+        "strict": true,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state, e.g., San Francisco, CA"
+                },
+                "unit": {
+                    "type": "string",
+                    "description": "Temperature unit",
+                    "enum": ["celsius", "fahrenheit"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["location", "unit"]
+        }
+    }
+
+    Example 3 (Array Input):
+    {
+        "name": "process_items",
+        "description": "Processes a list of items with specific IDs.",
+        "strict": true,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "item_ids": {
+                    "type": "array",
+                    "description": "A list of unique item identifiers to process.",
+                    "items": {
+                        "type": "string",
+                        "description": "An item ID"
+                    }
+                },
+                "processing_mode": {
+                    "type": "string",
+                    "description": "The mode for processing",
+                    "enum": ["fast", "thorough"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["item_ids", "processing_mode"]
+        }`
+    }
+  
+
+  const handleStreamStartRef = useRef<() => void>(() => {})
+  const handleGeneratedContentRef = useRef<(generatedCode: string) => void>(() => {})
+  const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {})
+  const [schema, setSchema] = useState<object | string>({})
 
 
-  // console.log("tableMode", tableMode);
-  // console.log("data", data);
+  const wandHook = useWand({
+    wandConfig: wandConfig || { enabled: false, prompt: '' },
+    currentValue: schemaDescription,
+    onStreamStart: () => handleStreamStartRef.current?.(),
+    onStreamChunk: (chunk: string) => handleStreamChunkRef.current?.(chunk),
+    onGeneratedContent: (content: string) => handleGeneratedContentRef.current?.(content),
+
+    onGenerationComplete: () => {
+        const content = [...(wandHook.conversationHistory || [])]
+          .reverse()
+          .find((m: any) => m.role === "assistant")?.content
+
+        if (!content) {
+          console.warn("No assistant content found.")
+          setSchemaLoading(false)
+          return
+        }
+
+        let parsed: object | string
+        try {
+          parsed = JSON.parse(content)
+          console.log("parsed json schema:", parsed)
+        } catch {
+          console.warn("Assistant content is not valid JSON, storing as string.")
+          parsed = content
+        }
+
+        setSchema(parsed)
+        setSchemaLoading(false)
+      }
+  })
+
+  logger.info("In agent Builder:", wandHook)
+
+  const handleGenerateSchema = () => {
+    if (!schemaDescription.trim()) {
+      toast.error("Please provide a schema description before generating.")
+      return
+    }
+    setSchemaLoading(true)
+    logger.info("in Agent Builder: handleGenerateSchema")
+    generateCodeStream({ prompt: schemaDescription })
+  }
+
+  const generateCodeStream = wandHook?.generateStream || (() => {})
+  const updatePromptValue = wandHook?.updatePromptValue || (() => {})
+
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 h-full min-h-0">
       <div className="grid grid-cols-2 gap-8 w-full h-full min-h-0">
         {/* left column - schema and description */}
-        <div className="grid grid-rows-3 gap-4 w-full h-full min-h-0">
+        <div className="grid grid-rows-3 gap-4 w-full h-full min-h-0 ">
           <DataField
             title="Schema Description"
-            data={{}}
-            // setData={(data: string | object) => {
-            //   if (typeof data === "string") {
-            //     actions.updateInstructions({ schema_description: data });
-            //   } else {
-            //     actions.updateInstructions({ schema_description: "" });
-            //   }
-            // }}
+            data={schemaDescription}
             setData={(data: string | object) => {
+              logger.info("setting Data")
               if (typeof data === "string") {
-                console.log("Fake update: JSON schema string", data);
-              } else {
-                console.log("Fake update: JSON schema object", data);
+                setSchemaDescription(data)
+                updatePromptValue(data)
               }
             }}
             className="row-span-1 min-h-0"
@@ -147,28 +234,26 @@ export function AgentBuilder({}: AgentBuilderProps) {
           />
           <DataField
             title="Extraction Schema"
-            data={{}}
-            // setData={(data: string | object) => {
-            //   if (typeof data === "string") {
-            //     actions.updateInstructions({ json_schema: {} });
-            //   } else {
-            //     actions.updateInstructions({ json_schema: data });
-            //   }
-            // }}
+            data={schema}
             setData={(data: string | object) => {
               if (typeof data === "string") {
-                console.log("Fake update: JSON schema string", data);
+                console.log("Manual update: JSON schema string", data)
               } else {
-                console.log("Fake update: JSON schema object", data);
+                console.log("Manual update: JSON schema object", data)
               }
             }}
             dataLoading={schemaLoading}
             buttonTitle="Generate Schema"
-            onButtonClick={generate}
+            onButtonClick={handleGenerateSchema}
             className="row-span-2 min-h-0"
-            // disabled={!instructions?.schema_description?.trim()} 
           />
         </div>
+
+
+
+
+
+
         {/* right column - input data and result */}
         <div className="grid grid-rows-3 gap-4 w-full h-full min-h-0">
           <DataInput
