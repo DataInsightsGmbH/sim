@@ -15,19 +15,19 @@ const transparentTheme = {
       backgroundColor: "transparent",
     },
     string: {
-      color: "var(--accent)",
+      color: "var(--brand-primary-hex)",
     },
     key: {
-      color: "var(--accent)", 
+      color: "var(--brand-primary-hex)", 
     },
     number: {
-      color: "var(--accent)",
+      color: "var(--brand-primary-hex)",
     },
     boolean: {
-      color: "var(--accent)",
+      color: "var(--brand-primary-hex)",
     },
     null: {
-      color: "var(--accent)",
+      color: "var(--brand-primary-hex)",
     },
   },
 };
@@ -105,7 +105,7 @@ export function DataField({
       <div className="px-4">
         <Separator />
       </div>
-      <div className="flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden">
+      <div className="flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden font-mono transition-colors bg-background">
         {isObject ? (
           <div className="flex-1 min-h-0 overflow-auto">
             {dataLoading ? (
