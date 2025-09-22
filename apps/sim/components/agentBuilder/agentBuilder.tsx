@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { DataField } from "./dataField"
 import { DataInput } from "./dataInput";
@@ -8,13 +8,24 @@ import type { JSONSchema7 } from "json-schema";
 import { useWand } from "@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-wand";
 import { useRef } from 'react'
 import { createLogger } from '@/lib/logs/console/logger'
+import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/components/sub-block/hooks/use-sub-block-value'
 
-type AgentBuilderProps = React.HTMLAttributes<HTMLDivElement>;
+
+type AgentBuilderProps = React.HTMLAttributes<HTMLDivElement> & {
+  blockId: string;
+  subBlockId: string;
+  schemaValue?: string;
+  descriptionValue?: string;
+};
 
 const logger = createLogger('AgentBlock')
 
-export function AgentBuilder({}: AgentBuilderProps) {
-  //const { instructions, actions } = useProvidersStore();
+export function AgentBuilder({
+  blockId,
+  subBlockId,
+  schemaValue: propValue,
+  descriptionValue: value,
+}: AgentBuilderProps) {
   const [tableMode, setTableMode] = useState<boolean>(false);
   const [data, setData] = useState<object[] | string>("");
   const [inputData, setInputData] = useState<string | object>(""); 
@@ -24,52 +35,46 @@ export function AgentBuilder({}: AgentBuilderProps) {
     data && typeof data !== "string" ? (data as object[]).map(() => null) : [],
   );
   const [schemaDescription, setSchemaDescription] = useState<string>('')
-
-
-  const apply = async () => {
-    setExtractLoading(true);
-    const inputRows =
-      Array.isArray(inputData) && inputData.length > 0 && typeof inputData[0] === "object"
-        ? (inputData as object[]).map((row) => JSON.stringify(row))
-        : [inputData];
-  };
-
+  const handleStreamStartRef = useRef<() => void>(() => {})
+  const handleGeneratedContentRef = useRef<(generatedCode: string) => void>(() => {})
+  const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {})
+  const [schema, setSchema] = useState<object | string>({})
 
   const dummyJsonSchema7: JSONSchema7 = {
-    $schema: "http://json-schema.org/draft-07/schema#",
-    title: "Article",
-    type: "object",
-    properties: {
-      author: {
-        type: "string" as const,
-        description: "Name of the article author",
-      },
-      date: {
-        type: "string" as const,
-        format: "date",
-        description: "Publication date",
-      },
-      title: {
-        type: "string" as const,
-        description: "Title of the article",
-      },
-      content: {
-        type: "string" as const,
-        description: "Main content of the article",
-      },
-      tags: {
-        type: "array" as const,
-        items: { type: "string" as const },
-        description: "Tags associated with the article",
-      },
-      views: {
-        type: "integer" as const,
-        minimum: 0,
-        description: "Number of views",
-      },
+  $schema: "http://json-schema.org/draft-07/schema#",
+  title: "Article",
+  type: "object",
+  properties: {
+    author: {
+      type: "string" as const,
+      description: "Name of the article author",
     },
-    required: ["author", "date", "title"],
-  };
+    date: {
+      type: "string" as const,
+      format: "date",
+      description: "Publication date",
+    },
+    title: {
+      type: "string" as const,
+      description: "Title of the article",
+    },
+    content: {
+      type: "string" as const,
+      description: "Main content of the article",
+    },
+    tags: {
+      type: "array" as const,
+      items: { type: "string" as const },
+      description: "Tags associated with the article",
+    },
+    views: {
+      type: "integer" as const,
+      minimum: 0,
+      description: "Number of views",
+    },
+  },
+  required: ["author", "date", "title"],
+};
 
   const wandConfig = {
         enabled: true,
@@ -158,12 +163,15 @@ export function AgentBuilder({}: AgentBuilderProps) {
             "required": ["item_ids", "processing_mode"]
         }`
     }
-  
 
-  const handleStreamStartRef = useRef<() => void>(() => {})
-  const handleGeneratedContentRef = useRef<(generatedCode: string) => void>(() => {})
-  const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {})
-  const [schema, setSchema] = useState<object | string>({})
+
+  const apply = async () => {
+    setExtractLoading(true);
+    const inputRows =
+      Array.isArray(inputData) && inputData.length > 0 && typeof inputData[0] === "object"
+        ? (inputData as object[]).map((row) => JSON.stringify(row))
+        : [inputData];
+  };
 
 
   const wandHook = useWand({
@@ -172,7 +180,6 @@ export function AgentBuilder({}: AgentBuilderProps) {
     onStreamStart: () => handleStreamStartRef.current?.(),
     onStreamChunk: (chunk: string) => handleStreamChunkRef.current?.(chunk),
     onGeneratedContent: (content: string) => handleGeneratedContentRef.current?.(content),
-
     onGenerationComplete: () => {
         const content = [...(wandHook.conversationHistory || [])]
           .reverse()
@@ -198,7 +205,7 @@ export function AgentBuilder({}: AgentBuilderProps) {
       }
   })
 
-  logger.info("In agent Builder:", wandHook)
+  //logger.info("In agent Builder:", wandHook)
 
   const handleGenerateSchema = () => {
     if (!schemaDescription.trim()) {
@@ -206,12 +213,70 @@ export function AgentBuilder({}: AgentBuilderProps) {
       return
     }
     setSchemaLoading(true)
-    logger.info("in Agent Builder: handleGenerateSchema")
+    //logger.info("in Agent Builder: handleGenerateSchema")
     generateCodeStream({ prompt: schemaDescription })
   }
 
   const generateCodeStream = wandHook?.generateStream || (() => {})
   const updatePromptValue = wandHook?.updatePromptValue || (() => {})
+  const isAiStreaming = wandHook?.isStreaming || false
+
+  // persist schema
+  const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `${subBlockId}_schema`, false, {
+    isStreaming: isAiStreaming,
+    onStreamingEnd: () => {
+      logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
+    },
+  })
+
+  const schemaValue = storeSchema
+
+  useEffect(() => {
+    handleStreamStartRef.current = () => {
+      setSchema('')
+    }
+
+    handleGeneratedContentRef.current = (generatedSchema: string) => {
+      setSchema(generatedSchema)
+      setStoreSchema(generatedSchema)
+    }
+  }, [setStoreSchema])
+
+  useEffect(() => {
+    if (isAiStreaming) return
+    const schemaString = schemaValue?.toString() ?? ''
+    if (schemaString !== schema) {
+      setSchema(schemaString)
+    }
+  }, [schemaValue, schema, isAiStreaming])
+
+
+  //persist description
+  const [storeDescription, setStoreDescription] = useSubBlockValue(blockId, `${subBlockId}_description`, false, {
+    isStreaming: isAiStreaming,
+    onStreamingEnd: () => {
+      logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
+    },
+  })
+
+  const descriptionValue = storeDescription
+
+  // load from store into local state
+  useEffect(() => {
+    const descriptionString = descriptionValue?.toString() ?? ''
+    if (descriptionString && descriptionString !== schemaDescription) {
+      setSchemaDescription(descriptionString)
+    }
+  }, [descriptionValue])
+
+  // persist local changes to store
+  useEffect(() => {
+    const descriptionString = descriptionValue?.toString() ?? ''
+    if (schemaDescription && schemaDescription !== descriptionString) {
+      setStoreDescription(schemaDescription)
+    }
+  }, [schemaDescription, descriptionValue, setStoreDescription])
+
 
 
   return (
