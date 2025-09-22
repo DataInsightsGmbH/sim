@@ -78,7 +78,7 @@ function FloatingWindow({
   return (
     <div
       ref={panelRef}
-      className="absolute overflow-hidden rounded-lg border bg-white shadow-lg"
+      className="absolute overflow-hidden rounded-lg border bg-primary shadow-lg border-teal-500"
       style={{
         top: position.top,
         left: position.left,
@@ -100,14 +100,6 @@ function FloatingWindow({
         className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-teal-500"
         onMouseDown={handleResize}
       />
-    </div>
-  )
-}
-
-function AnotherComponent() {
-  return (
-    <div className="flex h-full items-center justify-center">
-      <p className="text-lg font-semibold text-gray-700">🚀 Hello from AnotherComponent!</p>
     </div>
   )
 }
@@ -137,7 +129,6 @@ export function AgentBuilderButton({
       {open && (
         <FloatingWindow title="Agent Builder">
           < AgentBuilder/>
-          < AnotherComponent />
         </FloatingWindow>
       )}
     </>
