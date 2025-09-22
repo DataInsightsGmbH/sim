@@ -302,6 +302,8 @@ export function SubBlock({
       case 'agentBuilderButton':
         return (
           <AgentBuilderButton
+            blockId={blockId}
+            subBlockId={config.id}
             label='Open Agent Builder'
           />
         )
