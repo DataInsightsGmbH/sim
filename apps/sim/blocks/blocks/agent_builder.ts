@@ -299,7 +299,7 @@ Create a system prompt appropriately detailed for the request, using clear langu
       layout: 'full',
     },
     {
-      id: 'agentBuilderButton_schema',
+      id: 'responseFormat',
       title: 'Response Format',
       type: 'code',
       layout: 'full',

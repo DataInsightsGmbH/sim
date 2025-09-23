@@ -222,7 +222,7 @@ export function AgentBuilder({
   const isAiStreaming = wandHook?.isStreaming || false
 
   // persist schema
-  const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `${subBlockId}_schema`, false, {
+  const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `responseFormat`, false, {
     isStreaming: isAiStreaming,
     onStreamingEnd: () => {
       logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
