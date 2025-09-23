@@ -294,19 +294,14 @@ Create a system prompt appropriately detailed for the request, using clear langu
       defaultValue: [],
     },
     {
-      id: 'agentBuilderButton',
-      type: 'agentBuilderButton',
-      layout: 'full',
-    },
-    {
-      id: 'agentBuilderButton_schema',
+      id: 'responseFormat',
       title: 'Response Format',
       type: 'code',
       layout: 'full',
       placeholder: 'Enter JSON schema...',
       language: 'json',
       wandConfig: {
-        enabled: false,
+        enabled: true,
         maintainHistory: true,
         prompt: `You are an expert programmer specializing in creating JSON schemas according to a specific format.
 Generate ONLY the JSON schema based on the user's request.
