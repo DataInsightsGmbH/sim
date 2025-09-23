@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Code, Cpu, ExternalLink } from 'lucide-react'
 import {
+  AgentBuilderIcon,
   AgentIcon,
   ApiIcon,
   ChartBarIcon,
@@ -447,6 +448,8 @@ function TraceSpanItem({
   // Get color based on span type
   const getSpanColor = (type: string) => {
     switch (type.toLowerCase()) {
+      case 'agentBuilder':
+        return '#49b5b4ff'
       case 'agent':
         return 'var(--brand-primary-hover-hex)' // Purple from AgentBlock
       case 'provider':

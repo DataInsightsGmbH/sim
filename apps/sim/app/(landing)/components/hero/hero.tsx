@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { type Edge, type Node, Position } from 'reactflow'
 import {
+  AgentBuilderIcon,
   AgentIcon,
   AirtableIcon,
   DiscordIcon,
@@ -95,6 +96,21 @@ const LANDING_BLOCKS: LandingManualBlock[] = [
     tags: [
       { icon: <BookIcon className='h-3 w-3' />, label: 'Product Vector DB' },
       { icon: <BinaryIcon className='h-3 w-3' />, label: 'Limit: 10' },
+    ],
+  },
+  {
+    id: 'agentBuilder',
+    name: 'Agent Builder',
+    color: '#23d0d3ff',
+    icon: <AgentBuilderIcon className='h-4 w-4' />,
+    positions: {
+      mobile: { x: 340, y: 60 },
+      tablet: { x: 540, y: 120 },
+      desktop: { x: 880, y: 142 },
+    },
+    tags: [
+      { icon: <OpenAIIcon className='h-3 w-3' />, label: 'gpt-5' },
+      { icon: <MessageSquareIcon className='h-3 w-3' />, label: 'You are a support ag...' },
     ],
   },
   {
