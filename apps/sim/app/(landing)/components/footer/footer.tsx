@@ -10,6 +10,7 @@ import {
 import { inter } from '@/app/fonts/inter'
 
 const blocks = [
+  'AgentBuilder',
   'Agent',
   'API',
   'Condition',

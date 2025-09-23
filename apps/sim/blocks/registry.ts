@@ -2,7 +2,7 @@
  * Blocks Registry
  *
  */
-
+import { AgentBuilderBlock } from './blocks/agent_builder'
 import { AgentBlock } from '@/blocks/blocks/agent'
 import { AirtableBlock } from '@/blocks/blocks/airtable'
 import { ApiBlock } from '@/blocks/blocks/api'
@@ -84,6 +84,7 @@ import type { BlockConfig } from '@/blocks/types'
 
 // Registry of all available blocks, alphabetically sorted
 export const registry: Record<string, BlockConfig> = {
+  agentBuilder: AgentBuilderBlock,
   agent: AgentBlock,
   airtable: AirtableBlock,
   api: ApiBlock,
