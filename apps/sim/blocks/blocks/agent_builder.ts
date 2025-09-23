@@ -6,12 +6,8 @@ import {
   getAllModelProviders,
   getBaseModelProviders,
   getHostedModels,
-  getMaxTemperature,
   getProviderIcon,
-  MODELS_WITH_REASONING_EFFORT,
-  MODELS_WITH_VERBOSITY,
   providers,
-  supportsTemperature,
 } from '@/providers/utils'
 
 const getCurrentOllamaModels = () => {
@@ -69,84 +65,12 @@ export const AgentBuilderBlock: BlockConfig<AgentResponse> = {
   icon: AgentBuilderIcon,
   subBlocks: [
     {
-      id: 'systemPrompt',
-      title: 'System Prompt',
-      type: 'long-input',
-      layout: 'full',
-      placeholder: 'Enter system prompt...',
-      rows: 5,
-      wandConfig: {
-        enabled: true,
-        maintainHistory: true, // Enable conversation history for iterative improvements
-        prompt: `You are an expert system prompt engineer. Create a system prompt based on the user's request.
-
-### CONTEXT
-{context}
-
-### INSTRUCTIONS
-Write a system prompt following best practices. Match the complexity level the user requests.
-
-### CORE PRINCIPLES
-1. **Role Definition**: Start with "You are..." to establish identity and function
-2. **Direct Commands**: Use action verbs like "Analyze", "Generate", "Classify"
-3. **Be Specific**: Include output format, quality standards, behaviors, target audience
-4. **Clear Boundaries**: Define focus areas and priorities
-5. **Examples**: Add concrete examples when helpful
-
-### STRUCTURE
-- **Primary Role**: Clear identity statement
-- **Core Capabilities**: Main functions and expertise
-- **Behavioral Guidelines**: Task approach and interaction style
-- **Output Requirements**: Format, style, quality expectations
-- **Tool Integration**: Specific tool usage instructions
-
-### TOOL INTEGRATION
-When users mention tools, include explicit instructions:
-- **Web Search**: "Use Exa to gather current information from authoritative sources"
-- **Communication**: "Send messages via Slack/Discord/Teams with appropriate tone"
-- **Email**: "Compose emails through Gmail with professional formatting"
-- **Data**: "Query databases, analyze spreadsheets, call APIs as needed"
-
-### EXAMPLES
-
-**Simple**: "Create a customer service agent"
-→ You are a professional customer service representative. Respond to inquiries about orders, returns, and products with empathy and efficiency. Maintain a helpful tone while providing accurate information and clear next steps.
-
-**Detailed**: "Build a research assistant for market analysis"
-→ You are an expert market research analyst specializing in competitive intelligence and industry trends. Conduct thorough market analysis using systematic methodologies.
-
-Use Exa to gather information from industry sources, financial reports, and market research firms. Cross-reference findings across multiple credible sources.
-
-For each request, follow this structure:
-1. Define research scope and key questions
-2. Identify market segments and competitors
-3. Gather quantitative data (market size, growth rates)
-4. Collect qualitative insights (trends, consumer behavior)
-5. Synthesize findings into actionable recommendations
-
-Present findings in executive-ready formats with source citations, highlight key insights, and provide specific recommendations with rationale.
-
-### FINAL INSTRUCTION
-Create a system prompt appropriately detailed for the request, using clear language and relevant tool instructions.`,
-        placeholder: 'Describe the AI agent you want to create...',
-        generationType: 'system-prompt',
-      },
-    },
-    {
       id: 'userPrompt',
       title: 'User Prompt',
       type: 'long-input',
       layout: 'full',
       placeholder: 'Enter context or user message...',
       rows: 3,
-    },
-    {
-      id: 'memories',
-      title: 'Memories',
-      type: 'short-input',
-      layout: 'full',
-      placeholder: 'Connect memory block output...',
-      mode: 'advanced',
     },
     {
       id: 'model',
@@ -162,81 +86,11 @@ Create a system prompt appropriately detailed for the request, using clear langu
         const baseModels = Object.keys(getBaseModelProviders())
         const allModels = Array.from(new Set([...baseModels, ...ollamaModels, ...openrouterModels]))
 
+        // TODO: enable on AzureOpenAI and OpenAI
         return allModels.map((model) => {
           const icon = getProviderIcon(model)
           return { label: model, id: model, ...(icon && { icon }) }
         })
-      },
-    },
-    {
-      id: 'temperature',
-      title: 'Temperature',
-      type: 'slider',
-      layout: 'half',
-      min: 0,
-      max: 1,
-      defaultValue: 0.5,
-      condition: () => ({
-        field: 'model',
-        value: (() => {
-          const allModels = Object.keys(getAllModelProviders())
-          return allModels.filter(
-            (model) => supportsTemperature(model) && getMaxTemperature(model) === 1
-          )
-        })(),
-      }),
-    },
-    {
-      id: 'temperature',
-      title: 'Temperature',
-      type: 'slider',
-      layout: 'half',
-      min: 0,
-      max: 2,
-      defaultValue: 1,
-      condition: () => ({
-        field: 'model',
-        value: (() => {
-          const allModels = Object.keys(getAllModelProviders())
-          return allModels.filter(
-            (model) => supportsTemperature(model) && getMaxTemperature(model) === 2
-          )
-        })(),
-      }),
-    },
-    {
-      id: 'reasoningEffort',
-      title: 'Reasoning Effort',
-      type: 'dropdown',
-      layout: 'half',
-      placeholder: 'Select reasoning effort...',
-      options: [
-        { label: 'minimal', id: 'minimal' },
-        { label: 'low', id: 'low' },
-        { label: 'medium', id: 'medium' },
-        { label: 'high', id: 'high' },
-      ],
-      value: () => 'medium',
-      condition: {
-        field: 'model',
-        value: MODELS_WITH_REASONING_EFFORT,
-      },
-    },
-    {
-      id: 'verbosity',
-      title: 'Verbosity',
-      type: 'dropdown',
-      layout: 'half',
-      placeholder: 'Select verbosity...',
-      options: [
-        { label: 'low', id: 'low' },
-        { label: 'medium', id: 'medium' },
-        { label: 'high', id: 'high' },
-      ],
-      value: () => 'medium',
-      condition: {
-        field: 'model',
-        value: MODELS_WITH_VERBOSITY,
       },
     },
     {
@@ -285,13 +139,6 @@ Create a system prompt appropriately detailed for the request, using clear langu
         field: 'model',
         value: providers['azure-openai'].models,
       },
-    },
-    {
-      id: 'tools',
-      title: 'Tools',
-      type: 'tool-input',
-      layout: 'full',
-      defaultValue: [],
     },
     {
       id: 'agentBuilderButton',
