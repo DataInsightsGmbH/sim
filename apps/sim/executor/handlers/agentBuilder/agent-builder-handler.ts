@@ -19,7 +19,7 @@ import { getTool, getToolAsync } from '@/tools/utils'
 
 const logger = createLogger('AgentBuilderBlockHandler')
 
-const DEFAULT_MODEL = 'gpt-4o'
+const DEFAULT_MODEL = 'gpt-4.1'
 const DEFAULT_FUNCTION_TIMEOUT = 5000
 const REQUEST_TIMEOUT = 120000
 const CUSTOM_TOOL_PREFIX = 'custom_'
@@ -52,7 +52,7 @@ function collectBlockData(context: ExecutionContext): {
 }
 
 /**
- * Handler for Agent blocks that process LLM requests with optional tools.
+ * Handler for Agent builder blocks that process LLM requests with optional tools.
  */
 export class AgentBuilderBlockHandler implements BlockHandler {
   canHandle(block: SerializedBlock): boolean {
@@ -391,19 +391,11 @@ export class AgentBuilderBlockHandler implements BlockHandler {
   }
 
   private buildMessages(inputs: AgentInputs): Message[] | undefined {
-    if (!inputs.memories && !(inputs.systemPrompt && inputs.userPrompt)) {
-      return undefined
-    }
-
     const messages: Message[] = []
+    const responseFormat = this.parseResponseFormat(inputs.responseFormat)
 
-    if (inputs.memories) {
-      messages.push(...this.processMemories(inputs.memories))
-    }
-
-    if (inputs.systemPrompt) {
-      this.addSystemPrompt(messages, inputs.systemPrompt)
-    }
+    const staticSystemPrompt = "Extract the information from the user input. Respond using the provided schema:" + responseFormat.toString();
+    this.addSystemPrompt(messages, staticSystemPrompt)
 
     if (inputs.userPrompt) {
       this.addUserPrompt(messages, inputs.userPrompt)
@@ -412,41 +404,6 @@ export class AgentBuilderBlockHandler implements BlockHandler {
     return messages.length > 0 ? messages : undefined
   }
 
-  private processMemories(memories: any): Message[] {
-    if (!memories) return []
-
-    let memoryArray: any[] = []
-    if (memories?.memories && Array.isArray(memories.memories)) {
-      memoryArray = memories.memories
-    } else if (Array.isArray(memories)) {
-      memoryArray = memories
-    }
-
-    const messages: Message[] = []
-    memoryArray.forEach((memory: any) => {
-      if (memory.data && Array.isArray(memory.data)) {
-        memory.data.forEach((msg: any) => {
-          if (msg.role && msg.content && ['system', 'user', 'assistant'].includes(msg.role)) {
-            messages.push({
-              role: msg.role as 'system' | 'user' | 'assistant',
-              content: msg.content,
-            })
-          }
-        })
-      } else if (
-        memory.role &&
-        memory.content &&
-        ['system', 'user', 'assistant'].includes(memory.role)
-      ) {
-        messages.push({
-          role: memory.role as 'system' | 'user' | 'assistant',
-          content: memory.content,
-        })
-      }
-    })
-
-    return messages
-  }
 
   private addSystemPrompt(messages: Message[], systemPrompt: any) {
     let content: string
