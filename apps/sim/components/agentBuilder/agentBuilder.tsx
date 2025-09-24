@@ -16,6 +16,7 @@ import { ExecutionContext } from "@/executor/types";
 import type { SerializedBlock, SerializedWorkflow } from '@/serializer/types'
 import { apiKey } from "@sim/db";
 import { env } from '@/lib/env'
+import { executeAgentBlock } from "./agentExecutor";
 
 type AgentBuilderProps = React.HTMLAttributes<HTMLDivElement> & {
   blockId: string;
@@ -136,99 +137,23 @@ export function AgentBuilder({
         }`
     }
 
-  const agentHandler = new AgentBuilderBlockHandler()
 
   const apply = async () => {
     setExtractLoading(true)
 
-    const openaiApiKey = env.OPENAI_API_KEY
+    const openaiApiKey = env.OPENAI_API_KEY || ""
 
     try {
-      const block = {
-        id: "agent-builder-1",
-        position: { x: 100, y: 200 },
-        config: {
-          tool: "openai",
-          params: {
-            model: "gpt-4.1",
-            apiKey: openaiApiKey,
-            userPrompt: "", //TODO infill
-            responseFormat: schema
-          }
-        },
-        inputs: {
-          systemPrompt: "string",
-          userPrompt: "string",
-          model: "string",
-          apiKey: "string",
-          responseFormat: "json",
-        },
-        outputs: {
-          model: "string",
-          content: "string",
-          responseFormat: schema
-        },
-        metadata: {
-          id: "agentBuilderButton"
-        },
-        enabled: true
-      } as SerializedBlock
-
-      const inputs: AgentInputs = {
-        model: "gpt-4.1",
+      const cleanedOutput = await executeAgentBlock({
+        inputData,
+        schema: schema,
         apiKey: openaiApiKey,
-        userPrompt: [
-          inputData 
-        ],
-        responseFormat: schema, // TODO to json
-      }
-
-      const executionContext: ExecutionContext = {
-        workflowId: 'test-workflow', //TODO: get workflowId
-        blockStates: new Map(),
-        blockLogs: [],
-        metadata: { 
-          startTime: new Date().toISOString(),
-          duration: 0 
-        },
-        environmentVariables: {}, 
-        decisions: { 
-          router: new Map(), 
-          condition: new Map() 
-        },
-        loopIterations: new Map(),
-        loopItems: new Map(),
-        completedLoops: new Set(),
-        executedBlocks: new Set(),
-        activeExecutionPath: new Set(),
-        workflow: {
-          version: '1.0',
-          blocks: [
-            block,
-            //TODO start block? 
-          ],
-          connections: [],
-          loops: {},
-        } as SerializedWorkflow,
-      }
-
-    let cleanedOutput: object = {};
-
-    const output = await agentHandler.execute(block, inputs, executionContext);
-
-    // Remove unwanted fields
-    if (output && typeof output === "object") {
-      const { toolCalls, providerTiming, cost, tokens, ...rest } = output as any;
-      cleanedOutput = rest;
-    }
-
-    logger.debug("cleanedOutput:", cleanedOutput);
-    setResult([cleanedOutput]);
-
+      });
+      setResult([cleanedOutput]);
     } catch (err) {
-      console.error("Error extracting data:", err)
+      console.error(err);
     } finally {
-      setExtractLoading(false)
+      setExtractLoading(false);
     }
   }
 
