@@ -9,7 +9,13 @@ import { useWand } from "@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-
 import { useRef } from 'react'
 import { createLogger } from '@/lib/logs/console/logger'
 import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/components/sub-block/hooks/use-sub-block-value'
+import { AgentBuilderBlockHandler } from "@/executor/handlers"
 
+import { AgentInputs } from "@/executor/handlers/agent/types";
+import { ExecutionContext } from "@/executor/types";
+import type { SerializedBlock, SerializedWorkflow } from '@/serializer/types'
+import { apiKey } from "@sim/db";
+import { env } from '@/lib/env'
 
 type AgentBuilderProps = React.HTMLAttributes<HTMLDivElement> & {
   blockId: string;
@@ -34,47 +40,13 @@ export function AgentBuilder({
   const [result, setResult] = useState<(object | null)[]>(
     data && typeof data !== "string" ? (data as object[]).map(() => null) : [],
   );
+
   const [schemaDescription, setSchemaDescription] = useState<string>('')
   const handleStreamStartRef = useRef<() => void>(() => {})
   const handleGeneratedContentRef = useRef<(generatedCode: string) => void>(() => {})
   const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {})
   const [schema, setSchema] = useState<object | string>({})
 
-  const dummyJsonSchema7: JSONSchema7 = {
-  $schema: "http://json-schema.org/draft-07/schema#",
-  title: "Article",
-  type: "object",
-  properties: {
-    author: {
-      type: "string" as const,
-      description: "Name of the article author",
-    },
-    date: {
-      type: "string" as const,
-      format: "date",
-      description: "Publication date",
-    },
-    title: {
-      type: "string" as const,
-      description: "Title of the article",
-    },
-    content: {
-      type: "string" as const,
-      description: "Main content of the article",
-    },
-    tags: {
-      type: "array" as const,
-      items: { type: "string" as const },
-      description: "Tags associated with the article",
-    },
-    views: {
-      type: "integer" as const,
-      minimum: 0,
-      description: "Number of views",
-    },
-  },
-  required: ["author", "date", "title"],
-};
 
   const wandConfig = {
         enabled: true,
@@ -164,14 +136,101 @@ export function AgentBuilder({
         }`
     }
 
+  const agentHandler = new AgentBuilderBlockHandler()
 
   const apply = async () => {
-    setExtractLoading(true);
-    const inputRows =
-      Array.isArray(inputData) && inputData.length > 0 && typeof inputData[0] === "object"
-        ? (inputData as object[]).map((row) => JSON.stringify(row))
-        : [inputData];
-  };
+    setExtractLoading(true)
+
+    const openaiApiKey = env.OPENAI_API_KEY
+
+    try {
+      const block = {
+        id: "agent-builder-1",
+        position: { x: 100, y: 200 },
+        config: {
+          tool: "openai",
+          params: {
+            model: "gpt-4.1",
+            apiKey: openaiApiKey,
+            userPrompt: "", //TODO infill
+            responseFormat: schema
+          }
+        },
+        inputs: {
+          systemPrompt: "string",
+          userPrompt: "string",
+          model: "string",
+          apiKey: "string",
+          responseFormat: "json",
+        },
+        outputs: {
+          model: "string",
+          content: "string",
+          responseFormat: schema
+        },
+        metadata: {
+          id: "agentBuilderButton"
+        },
+        enabled: true
+      } as SerializedBlock
+
+      const inputs: AgentInputs = {
+        model: "gpt-4.1",
+        apiKey: openaiApiKey,
+        userPrompt: [
+          inputData 
+        ],
+        responseFormat: schema, // TODO to json
+      }
+
+      const executionContext: ExecutionContext = {
+        workflowId: 'test-workflow', //TODO: get workflowId
+        blockStates: new Map(),
+        blockLogs: [],
+        metadata: { 
+          startTime: new Date().toISOString(),
+          duration: 0 
+        },
+        environmentVariables: {}, 
+        decisions: { 
+          router: new Map(), 
+          condition: new Map() 
+        },
+        loopIterations: new Map(),
+        loopItems: new Map(),
+        completedLoops: new Set(),
+        executedBlocks: new Set(),
+        activeExecutionPath: new Set(),
+        workflow: {
+          version: '1.0',
+          blocks: [
+            block,
+            //TODO start block? 
+          ],
+          connections: [],
+          loops: {},
+        } as SerializedWorkflow,
+      }
+
+    let cleanedOutput: object = {};
+
+    const output = await agentHandler.execute(block, inputs, executionContext);
+
+    // Remove unwanted fields
+    if (output && typeof output === "object") {
+      const { toolCalls, providerTiming, cost, tokens, ...rest } = output as any;
+      cleanedOutput = rest;
+    }
+
+    logger.debug("cleanedOutput:", cleanedOutput);
+    setResult([cleanedOutput]);
+
+    } catch (err) {
+      console.error("Error extracting data:", err)
+    } finally {
+      setExtractLoading(false)
+    }
+  }
 
 
   const wandHook = useWand({
@@ -205,15 +264,12 @@ export function AgentBuilder({
       }
   })
 
-  //logger.info("In agent Builder:", wandHook)
-
   const handleGenerateSchema = () => {
     if (!schemaDescription.trim()) {
       toast.error("Please provide a schema description before generating.")
       return
     }
     setSchemaLoading(true)
-    //logger.info("in Agent Builder: handleGenerateSchema")
     generateCodeStream({ prompt: schemaDescription })
   }
 
@@ -261,7 +317,6 @@ export function AgentBuilder({
 
   const descriptionValue = storeDescription
 
-  // load from store into local state
   useEffect(() => {
     const descriptionString = descriptionValue?.toString() ?? ''
     if (descriptionString && descriptionString !== schemaDescription) {
@@ -269,7 +324,6 @@ export function AgentBuilder({
     }
   }, [descriptionValue])
 
-  // persist local changes to store
   useEffect(() => {
     const descriptionString = descriptionValue?.toString() ?? ''
     if (schemaDescription && schemaDescription !== descriptionString) {
@@ -277,12 +331,21 @@ export function AgentBuilder({
     }
   }, [schemaDescription, descriptionValue, setStoreDescription])
 
+  const json7Schema: JSONSchema7 | undefined =
+  typeof schema === "object" && schema !== null
+    ? {
+        $schema: "http://json-schema.org/draft-07/schema#",
+        type: "object",
+        additionalProperties: false,
+        ...schema,
+      }
+    : undefined;
+
 
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 h-full min-h-0">
       <div className="grid grid-cols-2 gap-8 w-full h-full min-h-0">
-        {/* left column - schema and description */}
         <div className="grid grid-rows-3 gap-4 w-full h-full min-h-0 ">
           <DataField
             title="Schema Description"
@@ -319,12 +382,6 @@ export function AgentBuilder({
           />
         </div>
 
-
-
-
-
-
-        {/* right column - input data and result */}
         <div className="grid grid-rows-3 gap-4 w-full h-full min-h-0">
           <DataInput
             title="Input Data"
@@ -336,14 +393,11 @@ export function AgentBuilder({
           />
           <DataOutput
             title="Extracted Data"
-            jsonSchema={dummyJsonSchema7}
+            jsonSchema={json7Schema || {}}
             result={result}
             tableMode={tableMode}
             buttonTitle="Extract Data"
             onButtonClick={apply}
-            // disabled={!inputData 
-            //   || !instructions?.json_schema
-            //   || (Array.isArray(inputData) && inputData.length === 0)} 
             className="row-span-2 min-h-0"
             dataLoading={extractLoading}
           />
