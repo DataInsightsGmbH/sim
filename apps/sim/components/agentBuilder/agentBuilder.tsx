@@ -1,22 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { DataField } from "./dataField"
 import { DataInput } from "./dataInput";
 import { DataOutput } from "./dataOutput";
 import type { JSONSchema7 } from "json-schema";
-import { useWand } from "@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-wand";
-import { useRef } from 'react'
 import { createLogger } from '@/lib/logs/console/logger'
 import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/components/sub-block/hooks/use-sub-block-value'
-import { AgentBuilderBlockHandler } from "@/executor/handlers"
-
-import { AgentInputs } from "@/executor/handlers/agent/types";
-import { ExecutionContext } from "@/executor/types";
-import type { SerializedBlock, SerializedWorkflow } from '@/serializer/types'
 import { apiKey } from "@sim/db";
 import { env } from '@/lib/env'
 import { executeAgentBlock } from "./agentExecutor";
+import { useSchemaGenerator } from "./useSchemaGenerator";
 
 type AgentBuilderProps = React.HTMLAttributes<HTMLDivElement> & {
   blockId: string;
@@ -42,100 +35,14 @@ export function AgentBuilder({
     data && typeof data !== "string" ? (data as object[]).map(() => null) : [],
   );
 
-  const [schemaDescription, setSchemaDescription] = useState<string>('')
-  const handleStreamStartRef = useRef<() => void>(() => {})
-  const handleGeneratedContentRef = useRef<(generatedCode: string) => void>(() => {})
-  const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {})
   const [schema, setSchema] = useState<object | string>({})
-
-
-  const wandConfig = {
-        enabled: true,
-        maintainHistory: true,
-        prompt: `You are an expert programmer specializing in creating JSON schemas according to a specific format.
-    Generate ONLY the JSON schema based on the user's request.
-    The output MUST be a single, valid JSON object, starting with { and ending with }.
-    The JSON object MUST have the following top-level properties: 'name' (string), 'description' (string), 'strict' (boolean, usually true), and 'schema' (object).
-    The 'schema' object must define the structure and MUST contain 'type': 'object', 'properties': {...}, 'additionalProperties': false, and 'required': [...].
-    Inside 'properties', use standard JSON Schema properties (type, description, enum, items for arrays, etc.).
-
-    Current schema: {context}
-
-    Do not include any explanations, markdown formatting, or other text outside the JSON object.
-
-    Valid Schema Examples:
-
-    Example 1:
-    {
-        "name": "reddit_post",
-        "description": "Fetches the reddit posts in the given subreddit",
-        "strict": true,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string",
-                    "description": "The title of the post"
-                },
-                "content": {
-                    "type": "string",
-                    "description": "The content of the post"
-                }
-            },
-            "additionalProperties": false,
-            "required": [ "title", "content" ]
-        }
-    }
-
-    Example 2:
-    {
-        "name": "get_weather",
-        "description": "Fetches the current weather for a specific location.",
-        "strict": true,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state, e.g., San Francisco, CA"
-                },
-                "unit": {
-                    "type": "string",
-                    "description": "Temperature unit",
-                    "enum": ["celsius", "fahrenheit"]
-                }
-            },
-            "additionalProperties": false,
-            "required": ["location", "unit"]
-        }
-    }
-
-    Example 3 (Array Input):
-    {
-        "name": "process_items",
-        "description": "Processes a list of items with specific IDs.",
-        "strict": true,
-        "schema": {
-            "type": "object",
-            "properties": {
-                "item_ids": {
-                    "type": "array",
-                    "description": "A list of unique item identifiers to process.",
-                    "items": {
-                        "type": "string",
-                        "description": "An item ID"
-                    }
-                },
-                "processing_mode": {
-                    "type": "string",
-                    "description": "The mode for processing",
-                    "enum": ["fast", "thorough"]
-                }
-            },
-            "additionalProperties": false,
-            "required": ["item_ids", "processing_mode"]
-        }`
-    }
+  const [storeDescription, setStoreDescription] = useSubBlockValue(blockId, `${subBlockId}_description`, false);
+  const {
+    schemaDescription,
+    setSchemaDescription,
+    handleGenerateSchema,
+    updatePromptValue,
+  } = useSchemaGenerator(storeDescription?.toString() || "", setSchema, setSchemaLoading, blockId, subBlockId);
 
 
   const apply = async () => {
@@ -156,105 +63,6 @@ export function AgentBuilder({
       setExtractLoading(false);
     }
   }
-
-
-  const wandHook = useWand({
-    wandConfig: wandConfig || { enabled: false, prompt: '' },
-    currentValue: schemaDescription,
-    onStreamStart: () => handleStreamStartRef.current?.(),
-    onStreamChunk: (chunk: string) => handleStreamChunkRef.current?.(chunk),
-    onGeneratedContent: (content: string) => handleGeneratedContentRef.current?.(content),
-    onGenerationComplete: () => {
-        const content = [...(wandHook.conversationHistory || [])]
-          .reverse()
-          .find((m: any) => m.role === "assistant")?.content
-
-        if (!content) {
-          console.warn("No assistant content found.")
-          setSchemaLoading(false)
-          return
-        }
-
-        let parsed: object | string
-        try {
-          parsed = JSON.parse(content)
-          console.log("parsed json schema:", parsed)
-        } catch {
-          console.warn("Assistant content is not valid JSON, storing as string.")
-          parsed = content
-        }
-
-        setSchema(parsed)
-        setSchemaLoading(false)
-      }
-  })
-
-  const handleGenerateSchema = () => {
-    if (!schemaDescription.trim()) {
-      toast.error("Please provide a schema description before generating.")
-      return
-    }
-    setSchemaLoading(true)
-    generateCodeStream({ prompt: schemaDescription })
-  }
-
-  const generateCodeStream = wandHook?.generateStream || (() => {})
-  const updatePromptValue = wandHook?.updatePromptValue || (() => {})
-  const isAiStreaming = wandHook?.isStreaming || false
-
-  // persist schema
-  const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `responseFormat`, false, {
-    isStreaming: isAiStreaming,
-    onStreamingEnd: () => {
-      logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
-    },
-  })
-
-  const schemaValue = storeSchema
-
-  useEffect(() => {
-    handleStreamStartRef.current = () => {
-      setSchema('')
-    }
-
-    handleGeneratedContentRef.current = (generatedSchema: string) => {
-      setSchema(generatedSchema)
-      setStoreSchema(generatedSchema)
-    }
-  }, [setStoreSchema])
-
-  useEffect(() => {
-    if (isAiStreaming) return
-    const schemaString = schemaValue?.toString() ?? ''
-    if (schemaString !== schema) {
-      setSchema(schemaString)
-    }
-  }, [schemaValue, schema, isAiStreaming])
-
-
-  //persist description
-  const [storeDescription, setStoreDescription] = useSubBlockValue(blockId, `${subBlockId}_description`, false, {
-    isStreaming: isAiStreaming,
-    onStreamingEnd: () => {
-      logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
-    },
-  })
-
-  const descriptionValue = storeDescription
-
-  useEffect(() => {
-    const descriptionString = descriptionValue?.toString() ?? ''
-    if (descriptionString && descriptionString !== schemaDescription) {
-      setSchemaDescription(descriptionString)
-    }
-  }, [descriptionValue])
-
-  useEffect(() => {
-    const descriptionString = descriptionValue?.toString() ?? ''
-    if (schemaDescription && schemaDescription !== descriptionString) {
-      setStoreDescription(schemaDescription)
-    }
-  }, [schemaDescription, descriptionValue, setStoreDescription])
 
   const json7Schema: JSONSchema7 | undefined =
   typeof schema === "object" && schema !== null
