@@ -208,7 +208,7 @@ export function DataInput({
       </div>
       <div
         className={cn(
-          "relative flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden max-w-full w-full",
+          "relative flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden max-w-full w-full bg-background",
           dragOver && "bg-accent border-primary",
           noDrop && "border-destructive",
         )}

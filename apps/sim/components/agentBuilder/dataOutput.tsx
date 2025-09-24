@@ -113,7 +113,7 @@ export function DataOutput({
         <Separator />
       </div>
       <div className="flex flex-1 flex-col h-0 rounded-b-xl overflow-hidden">
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto bg-background">
           {!tableMode && (
             dataLoading ? (
               <JsonSkeleton />
