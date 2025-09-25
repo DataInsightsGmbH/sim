@@ -30,7 +30,8 @@ export const useSchemaGenerator = (
   The output MUST be a single, valid JSON object, starting with { and ending with }.
   The JSON object MUST have the following top-level properties: 'name' (string), 'description' (string), 'strict' (boolean, usually true), and 'schema' (object).
   The 'schema' object must define the structure and MUST contain 'type': 'object', 'properties': {...}, 'additionalProperties': false, and 'required': [...].
-  Inside 'properties', use standard JSON Schema properties (type, description, enum, items for arrays, etc.).
+  The 'properties' objcect inside the 'schema' object MUST contain only one property: 'output' 
+  Inside 'output', use standard JSON Schema properties (type, description, enum, items for arrays, etc.).
 
   Current schema: {context}
 
@@ -40,74 +41,97 @@ export const useSchemaGenerator = (
 
   Example 1:
   {
-      "name": "reddit_post",
-      "description": "Fetches the reddit posts in the given subreddit",
-      "strict": true,
-      "schema": {
+    "name": "reddit_post",
+    "description": "Fetches the reddit posts in the given subreddit",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "output": {
           "type": "object",
           "properties": {
-              "title": {
-                  "type": "string",
-                  "description": "The title of the post"
-              },
-              "content": {
-                  "type": "string",
-                  "description": "The content of the post"
-              }
+            "title": {
+              "type": "string",
+              "description": "The title of the post"
+            },
+            "content": {
+              "type": "string",
+              "description": "The content of the post"
+            }
           },
-          "additionalProperties": false,
-          "required": [ "title", "content" ]
-      }
+          "required": ["title", "content"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["output"],
+      "additionalProperties": false
+    }
   }
 
   Example 2:
   {
-      "name": "get_weather",
-      "description": "Fetches the current weather for a specific location.",
-      "strict": true,
-      "schema": {
+    "name": "get_weather",
+    "description": "Fetches the current weather for a specific location.",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "output": {
           "type": "object",
           "properties": {
-              "location": {
-                  "type": "string",
-                  "description": "The city and state, e.g., San Francisco, CA"
-              },
-              "unit": {
-                  "type": "string",
-                  "description": "Temperature unit",
-                  "enum": ["celsius", "fahrenheit"]
-              }
+            "location": {
+              "type": "string",
+              "description": "The city and state, e.g., San Francisco, CA"
+            },
+            "unit": {
+              "type": "string",
+              "description": "Temperature unit",
+              "enum": ["celsius", "fahrenheit"]
+            }
           },
-          "additionalProperties": false,
-          "required": ["location", "unit"]
-      }
+          "required": ["location", "unit"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["output"],
+      "additionalProperties": false
+    }
   }
+
 
   Example 3 (Array Input):
   {
-      "name": "process_items",
-      "description": "Processes a list of items with specific IDs.",
-      "strict": true,
-      "schema": {
+    "name": "process_items",
+    "description": "Processes a list of items with specific IDs.",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "output": {
           "type": "object",
           "properties": {
-              "item_ids": {
-                  "type": "array",
-                  "description": "A list of unique item identifiers to process.",
-                  "items": {
-                      "type": "string",
-                      "description": "An item ID"
-                  }
-              },
-              "processing_mode": {
-                  "type": "string",
-                  "description": "The mode for processing",
-                  "enum": ["fast", "thorough"]
+            "item_ids": {
+              "type": "array",
+              "description": "A list of unique item identifiers to process.",
+              "items": {
+                "type": "string",
+                "description": "An item ID"
               }
+            },
+            "processing_mode": {
+              "type": "string",
+              "description": "The mode for processing",
+              "enum": ["fast", "thorough"]
+            }
           },
-          "additionalProperties": false,
-          "required": ["item_ids", "processing_mode"]
-      }`
+          "required": ["item_ids", "processing_mode"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["output"],
+      "additionalProperties": false
+    }
+  }`
   }
 
   const wandHook = useWand({
