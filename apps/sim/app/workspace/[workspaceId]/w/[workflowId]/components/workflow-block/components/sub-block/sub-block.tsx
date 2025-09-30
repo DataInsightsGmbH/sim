@@ -301,11 +301,7 @@ export function SubBlock({
         )
       case 'agentBuilderButton':
         return (
-          <AgentBuilderButton
-            blockId={blockId}
-            subBlockId={config.id}
-            label='Open Agent Builder'
-          />
+          <AgentBuilderButton blockId={blockId} subBlockId={config.id} label='Open Agent Builder' />
         )
       case 'webhook-config': {
         // For webhook config, we need to construct the value from multiple subblock values

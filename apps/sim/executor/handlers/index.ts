@@ -1,5 +1,5 @@
 import { AgentBlockHandler } from '@/executor/handlers/agent/agent-handler'
-import { AgentBuilderBlockHandler } from './agentBuilder/agent-builder-handler'
+import { AgentBuilderBlockHandler } from '@/executor/handlers/agentBuilder/agent-builder-handler'
 import { ApiBlockHandler } from '@/executor/handlers/api/api-handler'
 import { ConditionBlockHandler } from '@/executor/handlers/condition/condition-handler'
 import { EvaluatorBlockHandler } from '@/executor/handlers/evaluator/evaluator-handler'

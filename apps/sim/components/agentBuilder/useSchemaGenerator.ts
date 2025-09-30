@@ -1,31 +1,31 @@
 // useSchemaGenerator.ts
-import { useRef, useEffect, useState } from "react";
-import { toast } from "sonner";
-import { useWand } from "@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-wand";
-import { createLogger } from "@/lib/logs/console/logger";
+import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
+import { createLogger } from '@/lib/logs/console/logger'
 import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/components/sub-block/hooks/use-sub-block-value'
+import { useWand } from '@/app/workspace/[workspaceId]/w/[workflowId]/hooks/use-wand'
 
-const logger = createLogger("useSchemaGenerator");
+const logger = createLogger('useSchemaGenerator')
 
 export const useSchemaGenerator = (
   initialDescription: string,
   setSchema: (schema: object | string) => void,
   setSchemaLoading: (loading: boolean) => void,
   blockId: string,
-  subBlockId: string,
+  subBlockId: string
 ) => {
-  const [schemaDescription, setSchemaDescription] = useState(initialDescription);
+  const [schemaDescription, setSchemaDescription] = useState(initialDescription)
 
-  const handleStreamStartRef = useRef<() => void>(() => {});
-  const handleGeneratedContentRef = useRef<(generated: string) => void>(() => {});
-  const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {});
+  const handleStreamStartRef = useRef<() => void>(() => {})
+  const handleGeneratedContentRef = useRef<(generated: string) => void>(() => {})
+  const handleStreamChunkRef = useRef<(chunk: string) => void>(() => {})
 
   const [schema] = useState<object | string>({})
 
   const wandConfig = {
-      enabled: true,
-      maintainHistory: true,
-      prompt: `You are an expert programmer specializing in creating JSON schemas according to a specific format.
+    enabled: true,
+    maintainHistory: true,
+    prompt: `You are an expert programmer specializing in creating JSON schemas according to a specific format.
   Generate ONLY the JSON schema based on the user's request.
   The output MUST be a single, valid JSON object, starting with { and ending with }.
   The JSON object MUST have the following top-level properties: 'name' (string), 'description' (string), 'strict' (boolean, usually true), and 'schema' (object).
@@ -131,7 +131,7 @@ export const useSchemaGenerator = (
       "required": ["output"],
       "additionalProperties": false
     }
-  }`
+  }`,
   }
 
   const wandHook = useWand({
@@ -141,28 +141,28 @@ export const useSchemaGenerator = (
     onStreamChunk: (chunk: string) => handleStreamChunkRef.current?.(chunk),
     onGeneratedContent: (content: string) => handleGeneratedContentRef.current?.(content),
     onGenerationComplete: () => {
-        const content = [...(wandHook.conversationHistory || [])]
-          .reverse()
-          .find((m: any) => m.role === "assistant")?.content
+      const content = [...(wandHook.conversationHistory || [])]
+        .reverse()
+        .find((m: any) => m.role === 'assistant')?.content
 
-        if (!content) {
-          console.warn("No assistant content found.")
-          setSchemaLoading(false)
-          return
-        }
-
-        let parsed: object | string
-        try {
-          parsed = JSON.parse(content)
-          console.log("parsed json schema:", parsed)
-        } catch {
-          console.warn("Assistant content is not valid JSON, storing as string.")
-          parsed = content
-        }
-
-        setSchema(parsed)
+      if (!content) {
+        console.warn('No assistant content found.')
         setSchemaLoading(false)
+        return
       }
+
+      let parsed: object | string
+      try {
+        parsed = JSON.parse(content)
+        console.log('parsed json schema:', parsed)
+      } catch {
+        console.warn('Assistant content is not valid JSON, storing as string.')
+        parsed = content
+      }
+
+      setSchema(parsed)
+      setSchemaLoading(false)
+    },
   })
 
   const generateCodeStream = wandHook?.generateStream || (() => {})
@@ -171,72 +171,75 @@ export const useSchemaGenerator = (
 
   const handleGenerateSchema = () => {
     if (!schemaDescription.trim()) {
-      toast.error("Please provide a schema description before generating.")
+      toast.error('Please provide a schema description before generating.')
       return
     }
     setSchemaLoading(true)
     generateCodeStream({ prompt: schemaDescription })
   }
 
-    // persist schema
-    const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `responseFormat`, false, {
-      isStreaming: isAiStreaming,
-      onStreamingEnd: () => {
-        logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
-      },
-    })
-  
-    const schemaValue = storeSchema
-  
-    useEffect(() => {
-      handleStreamStartRef.current = () => {
-        setSchema('')
-      }
-  
-      handleGeneratedContentRef.current = (generatedSchema: string) => {
-        setSchema(generatedSchema)
-        setStoreSchema(generatedSchema)
-      }
-    }, [setStoreSchema])
-  
-    useEffect(() => {
-      if (isAiStreaming) return
-      const schemaString = schemaValue?.toString() ?? ''
-      if (schemaString !== schema) {
-        setSchema(schemaString)
-      }
-    }, [schemaValue, schema, isAiStreaming])
-  
-  
-    //persist description
-    const [storeDescription, setStoreDescription] = useSubBlockValue(blockId, `${subBlockId}_description`, false, {
-      isStreaming: isAiStreaming,
-      onStreamingEnd: () => {
-        logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
-      },
-    })
-  
-    const descriptionValue = storeDescription
-  
-    useEffect(() => {
-      const descriptionString = descriptionValue?.toString() ?? ''
-      if (descriptionString && descriptionString !== schemaDescription) {
-        setSchemaDescription(descriptionString)
-      }
-    }, [descriptionValue])
-  
-    useEffect(() => {
-      const descriptionString = descriptionValue?.toString() ?? ''
-      if (schemaDescription && schemaDescription !== descriptionString) {
-        setStoreDescription(schemaDescription)
-      }
-    }, [schemaDescription, descriptionValue, setStoreDescription])
+  // persist schema
+  const [storeSchema, setStoreSchema] = useSubBlockValue(blockId, `responseFormat`, false, {
+    isStreaming: isAiStreaming,
+    onStreamingEnd: () => {
+      logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
+    },
+  })
 
+  const schemaValue = storeSchema
 
   useEffect(() => {
-    handleStreamStartRef.current = () => setSchema("");
-    handleGeneratedContentRef.current = (generated: string) => setSchema(generated);
-  }, [setSchema]);
+    handleStreamStartRef.current = () => {
+      setSchema('')
+    }
+
+    handleGeneratedContentRef.current = (generatedSchema: string) => {
+      setSchema(generatedSchema)
+      setStoreSchema(generatedSchema)
+    }
+  }, [setStoreSchema])
+
+  useEffect(() => {
+    if (isAiStreaming) return
+    const schemaString = schemaValue?.toString() ?? ''
+    if (schemaString !== schema) {
+      setSchema(schemaString)
+    }
+  }, [schemaValue, schema, isAiStreaming])
+
+  //persist description
+  const [storeDescription, setStoreDescription] = useSubBlockValue(
+    blockId,
+    `${subBlockId}_description`,
+    false,
+    {
+      isStreaming: isAiStreaming,
+      onStreamingEnd: () => {
+        logger.debug('AI streaming ended, value persisted', { blockId, subBlockId })
+      },
+    }
+  )
+
+  const descriptionValue = storeDescription
+
+  useEffect(() => {
+    const descriptionString = descriptionValue?.toString() ?? ''
+    if (descriptionString && descriptionString !== schemaDescription) {
+      setSchemaDescription(descriptionString)
+    }
+  }, [descriptionValue])
+
+  useEffect(() => {
+    const descriptionString = descriptionValue?.toString() ?? ''
+    if (schemaDescription && schemaDescription !== descriptionString) {
+      setStoreDescription(schemaDescription)
+    }
+  }, [schemaDescription, descriptionValue, setStoreDescription])
+
+  useEffect(() => {
+    handleStreamStartRef.current = () => setSchema('')
+    handleGeneratedContentRef.current = (generated: string) => setSchema(generated)
+  }, [setSchema])
 
   return {
     schemaDescription,
@@ -244,5 +247,5 @@ export const useSchemaGenerator = (
     handleGenerateSchema,
     updatePromptValue,
     wandHook,
-  };
-};
+  }
+}

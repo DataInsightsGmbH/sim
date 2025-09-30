@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState, ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { AgentBuilder } from '@/components/agentBuilder/agentBuilder'
+import { Button } from '@/components/ui/button'
 
 function FloatingWindow({
   title,
@@ -15,7 +15,7 @@ function FloatingWindow({
   children: ReactNode
   initialWidth?: number
   initialHeight?: number
-  classname?:string
+  classname?: string
 }) {
   const [position, setPosition] = useState({ top: 300, left: 400 })
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight })
@@ -80,7 +80,7 @@ function FloatingWindow({
   return (
     <div
       ref={panelRef}
-      className={`absolute rounded-lg border bg-primary shadow-lg border-teal-500 ${classname}`}
+      className={`absolute rounded-lg border border-teal-500 bg-primary shadow-lg ${classname}`}
       style={{
         top: position.top,
         left: position.left,
@@ -90,16 +90,16 @@ function FloatingWindow({
       }}
     >
       <div
-        className="cursor-move select-none bg-teal-500 px-4 py-2 text-white"
+        className='cursor-move select-none bg-teal-500 px-4 py-2 text-white'
         onMouseDown={handleMouseDown}
       >
         {title}
       </div>
 
-      <div className="h-full w-full border-t">{children}</div>
+      <div className='h-full w-full border-t'>{children}</div>
 
       <div
-        className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-teal-500"
+        className='absolute right-0 bottom-0 h-4 w-4 cursor-se-resize bg-teal-500'
         onMouseDown={handleResize}
       />
     </div>
@@ -112,8 +112,8 @@ export function AgentBuilderButton({
   label,
   disabled = false,
 }: {
-  blockId: string,
-  subBlockId: string,
+  blockId: string
+  subBlockId: string
   label: string
   disabled?: boolean
 }) {
@@ -122,10 +122,10 @@ export function AgentBuilderButton({
   return (
     <>
       <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-10 border-teal-500 px-4 font-normal text-sm text-teal-500 hover:bg-grey-500"
+        type='button'
+        variant='outline'
+        size='sm'
+        className='h-10 border-teal-500 px-4 font-normal text-sm text-teal-500 hover:bg-grey-500'
         onClick={() => setOpen(!open)}
         disabled={disabled}
       >
@@ -133,11 +133,8 @@ export function AgentBuilderButton({
       </Button>
 
       {open && (
-        <FloatingWindow title="Agent Builder" classname='pb-10'>
-          < AgentBuilder
-            blockId={blockId}
-            subBlockId={subBlockId}
-            />
+        <FloatingWindow title='Agent Builder' classname='pb-10'>
+          <AgentBuilder blockId={blockId} subBlockId={subBlockId} />
         </FloatingWindow>
       )}
     </>

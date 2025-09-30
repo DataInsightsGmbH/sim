@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vite
 import { isHosted } from '@/lib/environment'
 import { getAllBlocks } from '@/blocks'
 import { BlockType } from '@/executor/consts'
-import { AgentBuilderBlockHandler } from '..'
 import type { ExecutionContext, StreamingExecution } from '@/executor/types'
 import { executeProviderRequest } from '@/providers'
 import { getProviderFromModel, transformBlockTool } from '@/providers/utils'
 import type { SerializedBlock, SerializedWorkflow } from '@/serializer/types'
 import { executeTool } from '@/tools'
+import { AgentBuilderBlockHandler } from '..'
 
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
 

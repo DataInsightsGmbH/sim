@@ -394,7 +394,7 @@ export class AgentBuilderBlockHandler implements BlockHandler {
     const messages: Message[] = []
     const responseFormat = this.parseResponseFormat(inputs.responseFormat)
 
-    const staticSystemPrompt = "Extract the information from the user input. Respond using the provided schema:" + responseFormat.toString();
+    const staticSystemPrompt = `Extract the information from the user input. Respond using the provided schema:${responseFormat.toString()}`
     this.addSystemPrompt(messages, staticSystemPrompt)
 
     if (inputs.userPrompt) {
@@ -403,7 +403,6 @@ export class AgentBuilderBlockHandler implements BlockHandler {
 
     return messages.length > 0 ? messages : undefined
   }
-
 
   private addSystemPrompt(messages: Message[], systemPrompt: any) {
     let content: string

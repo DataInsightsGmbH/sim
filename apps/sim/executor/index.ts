@@ -4,8 +4,8 @@ import type { TraceSpan } from '@/lib/logs/types'
 import type { BlockOutput } from '@/blocks/types'
 import { BlockType } from '@/executor/consts'
 import {
-  AgentBuilderBlockHandler,
   AgentBlockHandler,
+  AgentBuilderBlockHandler,
   ApiBlockHandler,
   ConditionBlockHandler,
   EvaluatorBlockHandler,

@@ -2,7 +2,7 @@
  * Blocks Registry
  *
  */
-import { AgentBuilderBlock } from './blocks/agent_builder'
+import { AgentBuilderBlock } from '@/blocks/blocks/agent_builder'
 import { AgentBlock } from '@/blocks/blocks/agent'
 import { AirtableBlock } from '@/blocks/blocks/airtable'
 import { ApiBlock } from '@/blocks/blocks/api'
