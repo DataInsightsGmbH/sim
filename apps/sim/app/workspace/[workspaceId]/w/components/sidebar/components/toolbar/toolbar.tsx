@@ -28,13 +28,13 @@ export function Toolbar({ userPermissions, isWorkspaceSelectorVisible = false }:
 
   const { regularBlocks, specialBlocks, tools, triggers } = useMemo(() => {
     const allBlocks = getAllBlocks()
-    const allowedBlockTypes = new Set(BLOCK_CONFIG.allowedBlocks);
+    const allowedBlockTypes = new Set(BLOCK_CONFIG.allowedBlocks)
 
     // Filter blocks based on search query
     const filteredBlocks = allBlocks.filter((block) => {
       if (block.type === 'starter' || block.hideFromToolbar) return false
 
-      if (!allowedBlockTypes.has(block.name)) return false;
+      if (!allowedBlockTypes.has(block.name)) return false
 
       return (
         !searchQuery.trim() ||

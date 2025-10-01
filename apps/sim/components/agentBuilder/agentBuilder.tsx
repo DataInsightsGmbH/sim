@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
 import type { JSONSchema7 } from 'json-schema'
+import { env } from '@/lib/env'
 import { createLogger } from '@/lib/logs/console/logger'
 import { useSubBlockValue } from '@/app/workspace/[workspaceId]/w/[workflowId]/components/workflow-block/components/sub-block/hooks/use-sub-block-value'
-import { env } from '@/lib/env'
 import { executeAgentBlock } from './agentExecutor'
 import { DataField } from './dataField'
 import { DataInput } from './dataInput'
@@ -52,7 +52,7 @@ export function AgentBuilder({
   const apply = async () => {
     setExtractLoading(true)
 
-    const openaiApiKey = env.OPENAI_API_KEY || ""
+    const openaiApiKey = env.OPENAI_API_KEY || ''
 
     try {
       const cleanedOutput = await executeAgentBlock({
