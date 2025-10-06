@@ -154,6 +154,53 @@ Realtime socket server (from `apps/sim` directory in a separate terminal):
 cd apps/sim
 bun run dev:sockets
 ```
+### Agent Builder
+#### Development in VS Code
+1. Add a launch.json:
+```
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Simstudio",
+            "runtimeExecutable": "npx",
+            "runtimeArgs": ["turbo", "run", "dev", "--filter=sim"],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/simstudio",
+                "BETTER_AUTH_URL": "http://localhost:3000",
+                "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
+                "BETTER_AUTH_SECRET": "your_auth_secret_here",
+                "ENCRYPTION_KEY": "your_encryption_key_here",
+                "GOOGLE_CLIENT_ID": "placeholder",
+                "GOOGLE_CLIENT_SECRET": "placeholder",
+                "GITHUB_CLIENT_ID": "placeholder",
+                "GITHUB_CLIENT_SECRET": "placeholder",
+                "RESEND_API_KEY": "placeholder",
+                "OLLAMA_URL": "http://localhost:11434",
+                "NEXT_PUBLIC_SOCKET_URL": "http://localhost:3002"
+            },
+            "console": "integratedTerminal",
+            "args": [],
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+    ]
+}
+```
+2. Run everything except simstudio in docker
+
+#### Deployment
+1. run (in root directory): ```docker compose -f docker-compose.local.yml build simstudio ```
+2. run: ```docker compose -f docker-compose.local.yml up -d```
+
 
 ## Copilot API Keys
 
