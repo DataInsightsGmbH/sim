@@ -5,6 +5,7 @@ import { Label, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import type { FieldDiffStatus } from '@/lib/workflows/diff/types'
 import {
+  AgentBuilderButton,
   ChannelSelectorInput,
   CheckboxList,
   Code,
@@ -297,6 +298,10 @@ export function SubBlock({
             previewValue={previewValue}
             disabled={isDisabled}
           />
+        )
+      case 'agentBuilderButton':
+        return (
+          <AgentBuilderButton blockId={blockId} subBlockId={config.id} label='Open Agent Builder' />
         )
       case 'webhook-config': {
         // For webhook config, we need to construct the value from multiple subblock values

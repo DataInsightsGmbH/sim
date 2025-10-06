@@ -23,6 +23,8 @@
     "test:billing:suite": "bun run scripts/test-billing-suite.ts"
   },
   "dependencies": {
+    "@tanstack/react-table": "latest",
+    "json-edit-react": "latest",
     "@anthropic-ai/sdk": "^0.39.0",
     "@aws-sdk/client-s3": "^3.779.0",
     "@aws-sdk/s3-request-presigner": "^3.779.0",
@@ -167,7 +169,7 @@
   "overrides": {
     "next": "15.4.1",
     "@next/env": "15.4.1",
-    "drizzle-orm": "^0.41.0",
+    "drizzle-orm": "^0.44.5",
     "postgres": "^3.4.5"
   }
 }

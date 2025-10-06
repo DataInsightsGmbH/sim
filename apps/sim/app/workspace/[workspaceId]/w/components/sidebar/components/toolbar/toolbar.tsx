@@ -9,6 +9,7 @@ import LoopToolbarItem from '@/app/workspace/[workspaceId]/w/components/sidebar/
 import ParallelToolbarItem from '@/app/workspace/[workspaceId]/w/components/sidebar/components/toolbar/components/toolbar-parallel-block/toolbar-parallel-block'
 import { getAllBlocks } from '@/blocks'
 import type { WorkspaceUserPermissions } from '@/hooks/use-user-permissions'
+import { BLOCK_CONFIG } from './toolbar_block_config'
 
 interface ToolbarProps {
   userPermissions: WorkspaceUserPermissions
@@ -27,10 +28,13 @@ export function Toolbar({ userPermissions, isWorkspaceSelectorVisible = false }:
 
   const { regularBlocks, specialBlocks, tools, triggers } = useMemo(() => {
     const allBlocks = getAllBlocks()
+    const allowedBlockTypes = new Set(BLOCK_CONFIG.allowedBlocks)
 
     // Filter blocks based on search query
     const filteredBlocks = allBlocks.filter((block) => {
       if (block.type === 'starter' || block.hideFromToolbar) return false
+
+      if (!allowedBlockTypes.has(block.name)) return false
 
       return (
         !searchQuery.trim() ||

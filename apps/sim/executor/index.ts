@@ -5,6 +5,7 @@ import type { BlockOutput } from '@/blocks/types'
 import { BlockType } from '@/executor/consts'
 import {
   AgentBlockHandler,
+  AgentBuilderBlockHandler,
   ApiBlockHandler,
   ConditionBlockHandler,
   EvaluatorBlockHandler,
@@ -152,6 +153,7 @@ export class Executor {
     this.blockHandlers = [
       new TriggerBlockHandler(),
       new AgentBlockHandler(),
+      new AgentBuilderBlockHandler(),
       new RouterBlockHandler(this.pathTracker),
       new ConditionBlockHandler(this.pathTracker, this.resolver),
       new EvaluatorBlockHandler(),

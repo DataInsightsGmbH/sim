@@ -40,6 +40,7 @@ export const setupHandlerMocks = () => {
       executeResult: (inputs: any) => inputs || {},
     }),
     AgentBlockHandler: createMockHandler('agent'),
+    AgentBuilderBlockHandler: createMockHandler('agentBuilder'),
     RouterBlockHandler: createMockHandler('router'),
     ConditionBlockHandler: createMockHandler('condition'),
     EvaluatorBlockHandler: createMockHandler('evaluator'),
