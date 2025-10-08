@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { getEnv } from '@/lib/env'
 import { cn } from '@/lib/utils'
 import { useVerification } from '@/app/(auth)/verify/use-verification'
 import { inter } from '@/app/fonts/inter'
@@ -246,9 +247,14 @@ function VerificationFormFallback() {
 }
 
 export function VerifyContent({ hasResendKey, isProduction }: VerifyContentProps) {
+  const skipVerification = getEnv('NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION') === 'true' || !isProduction
+
   return (
     <Suspense fallback={<VerificationFormFallback />}>
-      <VerificationForm hasResendKey={hasResendKey} isProduction={isProduction} />
+      <VerificationForm
+        hasResendKey={hasResendKey}
+        isProduction={isProduction && !skipVerification}
+      />
     </Suspense>
   )
 }

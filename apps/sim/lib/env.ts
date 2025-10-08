@@ -250,6 +250,7 @@ export const env = createEnv({
 
   // Variables available on both server and client
   shared: {
+    NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION:   z.string().optional(),                  // Skip email verification step (for dev/docker only)
     NODE_ENV:                              z.enum(['development', 'test', 'production']).optional(), // Runtime environment
     NEXT_TELEMETRY_DISABLED:               z.string().optional(),                // Disable Next.js telemetry collection
   },
@@ -281,6 +282,7 @@ export const env = createEnv({
     NEXT_PUBLIC_E2B_ENABLED: process.env.NEXT_PUBLIC_E2B_ENABLED,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_TELEMETRY_DISABLED: process.env.NEXT_TELEMETRY_DISABLED,
+    NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION: process.env.SKIP_EMAIL_VERIFICATION,
   },
 })
 

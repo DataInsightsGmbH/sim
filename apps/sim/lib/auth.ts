@@ -35,7 +35,7 @@ import {
 import { sendEmail } from '@/lib/email/mailer'
 import { getFromEmailAddress } from '@/lib/email/utils'
 import { quickValidateEmail } from '@/lib/email/validation'
-import { env, isTruthy } from '@/lib/env'
+import { env, getEnv, isTruthy } from '@/lib/env'
 import { isBillingEnabled, isProd } from '@/lib/environment'
 import { createLogger } from '@/lib/logs/console/logger'
 
@@ -147,7 +147,7 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: isProd,
+    requireEmailVerification: isProd && getEnv('NEXT_PUBLIC_SKIP_EMAIL_VERIFICATION') === 'false',
     sendVerificationOnSignUp: false,
     throwOnMissingCredentials: true,
     throwOnInvalidCredentials: true,
@@ -329,7 +329,7 @@ export const auth = betterAuth({
                     ) || emails[0]
                   if (primaryEmail) {
                     profile.email = primaryEmail.email
-                    profile.emailVerified = primaryEmail.verified || false
+                    profile.emailVerified = primaryEmail.verified || false //TODO true
                   }
                 } else {
                   logger.warn('Failed to fetch GitHub emails', {
